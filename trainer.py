@@ -65,9 +65,9 @@ def main(configs):
     batch_size = train_config["optimizer"]["batch_size"]
     
     # Dataloader
-    # trn_loader = DataLoader(
-    #     trn_set, batch_size=batch_size, num_workers=8, shuffle=True,
-    #     collate_fn=trn_set.collate_fn, pin_memory=True)
+    trn_loader = DataLoader(
+        trn_set, batch_size=batch_size, num_workers=8, shuffle=True,
+        collate_fn=trn_set.collate_fn, pin_memory=True)
     
     val_loader = DataLoader(
         val_set, batch_size=batch_size, num_workers=8, shuffle=True,
@@ -119,9 +119,9 @@ def main(configs):
     
      # Init logger
     for p in train_config["path"].values():
-        os.makedirs(os.path.join('output', exp_name, p), exist_ok=True)
-    train_log_path = os.path.join('output', exp_name, train_config["path"]["log_path"], "train")
-    val_log_path = os.path.join('output', exp_name, train_config["path"]["log_path"], "val")
+        os.makedirs(os.path.join(exp_name, p), exist_ok=True)
+    train_log_path = os.path.join(exp_name, train_config["path"]["log_path"], "train")
+    val_log_path = os.path.join(exp_name, train_config["path"]["log_path"], "val")
     os.makedirs(train_log_path, exist_ok=True)
     os.makedirs(val_log_path, exist_ok=True)
     train_logger = SummaryWriter(train_log_path)
@@ -143,7 +143,7 @@ def main(configs):
             # gradient zero
             model.zero_grad(set_to_none=True)
             
-            outputs = model(mel, lenx, indi_mel)
+            outputs = model(mel, lenx, indi_mel) # 
             nll, con_kl, indi_kl = model.loss_fn(outputs, mel, lenx)
             indi_c = np.clip(indi_mi / stop_step * global_step, 0, indi_mi)
             
@@ -177,11 +177,29 @@ def main(configs):
                 print(message)
                 val_losses.append([val_nll, val_con_kl, val_indi_kl])
                 
+                # reconstruction
+                val_mel, val_lenx, val_indi_mel, val_ctID, val_cID = next(iter(val_single_sampler))
+                val_mel = val_mel.to(device)
+                val_lenx = val_lenx.to(device)
+                val_indi_mel = val_indi_mel.to(device)
+                
+                # tst_mel, tst_lenx, tst_indi_mel, tst_ctID, tst_cID = next(iter(tst_single_sampler))
+                # tst_mel = tst_mel.to(device)
+                # tst_lenx = tst_lenx.to(device)
+                # tst_indi_mel = tst_indi_mel.to(device)
+
+                with torch.no_grad():
+                    outputs = model(val_mel, val_lenx, val_indi_mel)
+                    rec_mel = outputs['x_rec']
+                    log(val_logger, step=global_step, fig=rec_mel,
+                        tag="Val/step-{}-0-rec_mel".format(global_step))
+                    
+                model.train()
+                
             if global_step % save_step == 0:
                 torch.save(
                     {"model": model.state_dict(), "optimizer": optim.state_dict()},
-                    os.path.join(
-                        exp_name, train_config["path"]["save_path"], "{}.pth.tar".format(global_step)))
+                    os.path.join(exp_name, train_config["path"]["save_path"], "{}.pth.tar".format(global_step)))
             
             global_step += 1
             if global_step > total_step:

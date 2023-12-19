@@ -28,7 +28,7 @@ step:
   mi_stop: 20000
   log_step: 500
   val_step: 5000
-  save_step: 50000
+  save_step: 10000
 
 # step:
 #   total_step: 200000
