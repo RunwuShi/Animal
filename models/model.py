@@ -7,8 +7,9 @@ from modules import staticEncoderBase, dynamicEncoderBase, ConvSADecoder,\
     sequence_mask
 
 class VAEbase(nn.Module):
-    def __init__(self, model_config):
+    def __init__(self, model_config, device):
         super().__init__()
+        self.device = device
         # load model config
         self.staticEncoder = staticEncoderBase(**model_config['static_encoder'])
         self.dynamicEncoder = dynamicEncoderBase(**model_config['dynamic_encoder'])

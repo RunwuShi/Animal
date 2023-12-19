@@ -5,19 +5,17 @@ import torch
 import argparse
 import models
 import numpy as np
+from tqdm import tqdm
 from datasets import MelDataset
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from matplotlib import pyplot as plt
 
 # evaluate val dataset
 def evaluate_step(model, dataloader):
     nll = 0.
     con_kl = 0.
-    spk_kl = 0.
-    pro_kl = 0.
-    pro_reg = 0.
-    pit_kl = 0.
-    ene_kl = 0.
+    indi_kl = 0.
     sample_size = 0
     for mel, lenx, indi_mel, ctID, cID in dataloader:
         mel = mel.to(model.device)
@@ -35,6 +33,12 @@ def evaluate_step(model, dataloader):
         indi_kl += _indi_kl.item() * batch_size
   
     return (nll / sample_size, con_kl / sample_size, indi_kl / sample_size)
+
+def plot_mel(mel_data):
+    mel_data = mel_data[0].detach()
+    fig = plt.imshow(mel_data.cpu().numpy(), origin="lower")
+    return fig
+    
 
 def log(logger, step=None, losses=None, fig=None, audio=None, sampling_rate=44100, tag="", model=None):
     if losses is not None:
@@ -82,11 +86,10 @@ def main(configs):
     # model loading 
     model_name = model_config['model_name']
     model_type = getattr(models, model_name) # model choose
-    model = model_type(model_config) # model config load
+    model = model_type(model_config,device).to(device) # model config load
     num_param = get_param_num(model)
     
-    print('Model nmae:', model_name,'\n',
-          'Number of Parameters:', num_param)
+    print('Model name:', model_name, 'Number of Parameters:', num_param)
     
     # training para loading
     # set optimizers
@@ -109,11 +112,12 @@ def main(configs):
     # Experiment name
     exp_name = '{}-c_{}_{}-i_{}_{}'.format(
         model_name, con_gamma, con_mi, indi_gamma, indi_mi)
+    exp_name =  "output" + '/' + exp_name
 
     # Load model checkpoint
     if train_config["load_model"]:
-        save_path = os.path.join(
-            exp_name, train_config["path"]["save_path"], "{}.pth.tar".format(train_config["load_step"]))
+        save_path = os.path.join(exp_name, train_config["path"]["save_path"], 
+                                 "{}.pth.tar".format(train_config["load_step"]))
         ckpt = torch.load(save_path)
         model.load_state_dict(ckpt["model"])
     
@@ -135,7 +139,7 @@ def main(configs):
     # start training
     while True:
         # for mel, lenx, indi_mel, ctID, cID in trn_loader:
-        for mel, lenx, indi_mel, ctID, cID in val_loader:
+        for mel, lenx, indi_mel, ctID, cID in tqdm(val_loader):
             mel = mel.to(device)
             lenx = lenx.to(device)
             indi_mel = indi_mel.to(device)
@@ -154,9 +158,9 @@ def main(configs):
             loss.backward()
             optim.step()
             
-            print('run')
+            # print('run')
             
-            if global_step % log_step == 0:
+            if global_step > 0 and global_step % log_step == 0:
                 losses = [nll.item(), con_kl.item(), indi_kl.item()]
                 message1 = "Step {}/{}, ".format(global_step, total_step)
                 message2 = "NLL: {:.3f}, con-kl: {:.3f}, indi-kl: {:.3f},".format(*losses)
@@ -165,7 +169,7 @@ def main(configs):
                 print(message1 + message2)
                 log(train_logger, global_step, losses=losses, model=model_name)
     
-            if global_step % val_step == 0:
+            if global_step > 0 and global_step % val_step == 0:
                 model.eval()
                 val_nll, val_con_kl, val_indi_kl = evaluate_step(model, val_loader)
                 log(val_logger, step=global_step, model=model_name,
@@ -191,12 +195,13 @@ def main(configs):
                 with torch.no_grad():
                     outputs = model(val_mel, val_lenx, val_indi_mel)
                     rec_mel = outputs['x_rec']
-                    log(val_logger, step=global_step, fig=rec_mel,
+                    rec_mel_fig = plot_mel(rec_mel)
+                    log(val_logger, step=global_step, fig=rec_mel_fig,
                         tag="Val/step-{}-0-rec_mel".format(global_step))
                     
                 model.train()
                 
-            if global_step % save_step == 0:
+            if global_step > 0 and global_step % save_step == 0:
                 torch.save(
                     {"model": model.state_dict(), "optimizer": optim.state_dict()},
                     os.path.join(exp_name, train_config["path"]["save_path"], "{}.pth.tar".format(global_step)))
