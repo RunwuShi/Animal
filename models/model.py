@@ -39,13 +39,13 @@ class VAEbase(nn.Module):
         indi_mu = outputs['indi_mu']
         indi_log_std = outputs['indi_log_std']
          
-        con_kl = self.staticEncoder.kl_divergence(indi_mu, indi_log_std)
-        indi_kl = self.dynamicEncoder.kl_divergence(con_mu, con_log_std, lens)
+        indi_kl = self.staticEncoder.kl_divergence(indi_mu, indi_log_std)
+        con_kl = self.dynamicEncoder.kl_divergence(con_mu, con_log_std, lens)
         
         # x_rec: rec, mel: ground truth
         nll = 0.5 * self.dec_laplace_nll(x_rec, mel, lens) + 0.5 * self.dec_normal_nll(x_rec, mel, lens)
 
-        return nll, con_kl, indi_kl
+        return nll, indi_kl, con_kl
         
     @staticmethod
     def dec_normal_nll(x_hat, x_gt, lens=None):

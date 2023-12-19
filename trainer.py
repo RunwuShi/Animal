@@ -70,11 +70,11 @@ def main(configs):
     
     # Dataloader
     trn_loader = DataLoader(
-        trn_set, batch_size=batch_size, num_workers=8, shuffle=True,
+        trn_set, batch_size=batch_size, num_workers=2, shuffle=True,
         collate_fn=trn_set.collate_fn, pin_memory=True)
     
     val_loader = DataLoader(
-        val_set, batch_size=batch_size, num_workers=8, shuffle=True,
+        val_set, batch_size=batch_size, num_workers=2, shuffle=True,
         collate_fn=val_set.collate_fn, pin_memory=True)
     
     val_single_sampler = DataLoader(val_set, batch_size=1, shuffle=True)
@@ -138,8 +138,7 @@ def main(configs):
         
     # start training
     while True:
-        # for mel, lenx, indi_mel, ctID, cID in trn_loader:
-        for mel, lenx, indi_mel, ctID, cID in tqdm(val_loader):
+        for mel, lenx, indi_mel, ctID, cID in tqdm(trn_loader):
             mel = mel.to(device)
             lenx = lenx.to(device)
             indi_mel = indi_mel.to(device)
@@ -148,7 +147,7 @@ def main(configs):
             model.zero_grad(set_to_none=True)
             
             outputs = model(mel, lenx, indi_mel) # 
-            nll, con_kl, indi_kl = model.loss_fn(outputs, mel, lenx)
+            nll, indi_kl, con_kl = model.loss_fn(outputs, mel, lenx)
             indi_c = np.clip(indi_mi / stop_step * global_step, 0, indi_mi)
             
             # total loss function
