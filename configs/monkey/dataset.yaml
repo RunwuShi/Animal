@@ -1,0 +1,10 @@
+dataset: monkey
+
+path:
+  origin_path: "G:/work_code/Acoustic/dataset/monkey"  # set to the root directory of dataset
+  preprocessed_path: "G:/work_code/Acoustic/dataset/preprocessed/monkey/set_by_twin"  # set to the directory 
+  dataset_summary: "G:/work_code/Acoustic/dataset/preprocessed"
+
+preprocessing:
+  segment_size: 256 # each sample length
+  chunk_size: 32
