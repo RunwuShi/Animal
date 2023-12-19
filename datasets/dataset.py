@@ -37,16 +37,19 @@ class MelDataset(Dataset):
             # plt.show()
             len = mel_sample.shape[-1]
             self.mel_len.append(len)
-            
+    
+    def __len__(self):
+        return len(self.mel_len)
             
     def __getitem__(self, idx):
         mel= self.mel_data[idx]
-        len = self.mel_len[idx]
+        lenx = self.mel_len[idx]
         indi_mel = self.indi_mel_data[idx]
         ctID = self.ctID_list[idx]
         cID = self.cID_list[idx]
         
-        return mel, len, indi_mel, ctID, cID
+        return mel, lenx, indi_mel, ctID, cID
+    
     
     def chunk_shuffle(self, x, chunk_size):
         """
@@ -59,10 +62,11 @@ class MelDataset(Dataset):
         x_T = x.T
         
         x_reshaped = np.reshape(x_T, [time // chunk_size, -1, dim])
-        print(x_reshaped.shape)
+        # print(x_reshaped.shape)
         np.random.shuffle(x_reshaped)
         x_shuffled = np.reshape(x_reshaped, [-1, dim]).T
         return x_shuffled
+    
     
     def mel_process(self, mel_data):
         # lenth > segment_size
@@ -98,6 +102,28 @@ class MelDataset(Dataset):
                     
         return data_path_list, ctID_list, cID_list
     
+    @staticmethod
+    def collate_fn(batch):
+        """
+           batch: a list of data (fid, mel, mel_ext, mel.shape[1])
+           ,      mel, lenx, indi_mel, ctID, cID
+        """
+        mels = [data[0] for data in batch]
+        lens = np.array([data[1] for data in batch])
+        indi_mel = np.array([data[2] for data in batch])
+        ctID = np.array([data[3] for data in batch])
+        cID = np.array([data[4] for data in batch])
+        
+        # mel batch
+        mel_batch = [torch.from_numpy(mel.T) for mel in mels]
+        mel_batch = torch.nn.utils.rnn.pad_sequence(mel_batch, batch_first=True)
+        mel_batch = mel_batch.permute((0, 2, 1))
+        # length of mel batch
+        lens_batch = torch.from_numpy(lens).to(torch.int32)
+        # individual mel batch
+        indi_mel_batch = torch.from_numpy(indi_mel).to(torch.float32)
+        
+        return mel_batch, lens_batch, indi_mel_batch, ctID, cID
     
 
 
