@@ -1,7 +1,7 @@
 path:
-  save_path: "checkpoint"
-  log_path: "log"
-  result_path: "result"
+  save_path: "output/checkpoint"
+  log_path: "output/log"
+  result_path: "output/result"
 
 load_model: False
 # load_model: True
@@ -24,11 +24,18 @@ optimizer:
   indi_mi: 60.
 
 step:
-  total_step: 200000
+  total_step: 80000
   mi_stop: 20000
   log_step: 500
   val_step: 5000
   save_step: 50000
+
+# step:
+#   total_step: 200000
+#   mi_stop: 20000
+#   log_step: 500
+#   val_step: 5000
+#   save_step: 50000
 
 misc:
   seed: 114514
