@@ -35,8 +35,18 @@ def evaluate_step(model, dataloader):
     return (nll / sample_size, con_kl / sample_size, indi_kl / sample_size)
 
 def plot_mel(mel_data):
-    mel_data = mel_data[0].detach()
-    fig = plt.imshow(mel_data.cpu().numpy(), origin="lower")
+    mel_data = mel_data.detach().cpu().numpy()
+    print('mel_data',mel_data.shape)
+    fig, axes = plt.subplots(len(mel_data), 1, squeeze=False)
+    
+    for i in range(len(mel_data)):
+        mel = mel_data[i]
+        axes[i][0].imshow(mel, origin="lower")
+        axes[i][0].set_aspect(2.5, adjustable="box")
+        axes[i][0].set_ylim(0, mel.shape[0])
+        axes[i][0].tick_params(labelsize="x-small", left=False, labelleft=False)
+        axes[i][0].set_anchor("W")
+        
     return fig
     
 
@@ -57,6 +67,8 @@ def get_param_num(model):
     return num_param
 
 def main(configs):
+    # device 1 
+    torch.cuda.set_device(1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset_config, model_config, train_config = configs
     
@@ -66,15 +78,17 @@ def main(configs):
     val_set = MelDataset(dataset_config, subset='val')
     tst_set = MelDataset(dataset_config, subset='test')
     
+    print('len', len(trn_set))
+    
     batch_size = train_config["optimizer"]["batch_size"]
     
     # Dataloader
     trn_loader = DataLoader(
-        trn_set, batch_size=batch_size, num_workers=2, shuffle=True,
+        trn_set, batch_size=batch_size, num_workers=4, shuffle=True,
         collate_fn=trn_set.collate_fn, pin_memory=True)
     
     val_loader = DataLoader(
-        val_set, batch_size=batch_size, num_workers=2, shuffle=True,
+        val_set, batch_size=batch_size, num_workers=4, shuffle=True,
         collate_fn=val_set.collate_fn, pin_memory=True)
     
     val_single_sampler = DataLoader(val_set, batch_size=1, shuffle=True)
@@ -112,7 +126,8 @@ def main(configs):
     # Experiment name
     exp_name = '{}-c_{}_{}-i_{}_{}'.format(
         model_name, con_gamma, con_mi, indi_gamma, indi_mi)
-    exp_name =  "output" + '/' + exp_name
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    exp_name =  current_directory + '/' + "output" + '/' + exp_name
 
     # Load model checkpoint
     if train_config["load_model"]:
@@ -136,7 +151,7 @@ def main(configs):
     else:
         global_step = 0
         
-    # start training
+    # start training---------------------------------------------------------------
     while True:
         for mel, lenx, indi_mel, ctID, cID in tqdm(trn_loader):
             mel = mel.to(device)
@@ -195,9 +210,13 @@ def main(configs):
                     outputs = model(val_mel, val_lenx, val_indi_mel)
                     rec_mel = outputs['x_rec']
                     rec_mel_fig = plot_mel(rec_mel)
+                    gr_mel_fig = plot_mel(val_mel)
+
+                    log(val_logger, step=global_step, fig=gr_mel_fig,
+                        tag="Val/step-{}-0-rec_mel_gt".format(global_step))
                     log(val_logger, step=global_step, fig=rec_mel_fig,
                         tag="Val/step-{}-0-rec_mel".format(global_step))
-                    
+                     
                 model.train()
                 
             if global_step > 0 and global_step % save_step == 0:
@@ -216,10 +235,15 @@ def main(configs):
 if __name__ == "__main__":
     # args
     
+    # config path on win
+    # data_config_path = "./configs/monkey/dataset.yaml"
+    # model_config_path = "./configs/monkey/model.yaml"
+    # train_config_path = "./configs/monkey/train.yaml"
+    
     # config path
-    data_config_path = "./configs/monkey/dataset.yaml"
-    model_config_path = "./configs/monkey/model.yaml"
-    train_config_path = "./configs/monkey/train.yaml"
+    data_config_path = "./Animal/configs/monkey/dataset.yaml"
+    model_config_path = "./Animal/configs/monkey/model.yaml"
+    train_config_path = "./Animal/configs/monkey/train.yaml"
     
     # Read Config
     dataset_config = yaml.load(open(data_config_path, "r"), Loader=yaml.FullLoader)

@@ -1,9 +1,9 @@
 dataset: monkey
 
 path:
-  origin_path: "D:/work_code/dataset/monkey"  # set to the root directory of dataset
-  preprocessed_path: "D:/work_code/dataset/preprocessed/monkey/set_by_twin"  # set to the directory 
-  dataset_summary: "D:/work_code/dataset/preprocessed"
+  origin_path: "./dataset/monkey"  # set to the root directory of dataset
+  preprocessed_path: "./dataset/preprocessed/monkey/set_by_twin"  # set to the directory 
+  dataset_summary: "./dataset/preprocessed/"
 
 preprocessing:
   segment_size: 256 # each sample length
