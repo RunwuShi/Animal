@@ -93,6 +93,7 @@ class MelDataset(Dataset):
             data_info = json.load(f)
         # used key in data_info
         used_key = ['twin_1', 'twin_2']
+        used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4']
         for key in used_key:
             if key in data_info:
                 for i in data_info[key]:

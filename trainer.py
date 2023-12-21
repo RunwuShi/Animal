@@ -23,7 +23,7 @@ def evaluate_step(model, dataloader):
         lenx = lenx.to(model.device)
         
         outputs = model(mel, lenx, indi_mel)
-        _nll, _con_kl, _indi_kl = model.loss_fn(outputs, mel, lenx)
+        _nll, _indi_kl, _con_kl = model.loss_fn(outputs, mel, lenx)
         
         batch_size = mel.shape[0]
         sample_size += batch_size
@@ -32,7 +32,7 @@ def evaluate_step(model, dataloader):
         con_kl += _con_kl.item() * batch_size
         indi_kl += _indi_kl.item() * batch_size
   
-    return (nll / sample_size, con_kl / sample_size, indi_kl / sample_size)
+    return (nll / sample_size, indi_kl / sample_size, con_kl / sample_size)
 
 def plot_mel(mel_data):
     mel_data = mel_data.detach().cpu().numpy()
@@ -163,10 +163,13 @@ def main(configs):
             
             outputs = model(mel, lenx, indi_mel) # 
             nll, indi_kl, con_kl = model.loss_fn(outputs, mel, lenx)
+            
             indi_c = np.clip(indi_mi / stop_step * global_step, 0, indi_mi)
+            con_c = np.clip(con_mi / stop_step * global_step, 0, con_mi)
+
             
             # total loss function
-            loss = (nll + con_gamma * (con_kl).abs() +
+            loss = (nll + con_gamma * (con_kl - con_c).abs() +
                     indi_gamma * (indi_kl - indi_c).abs())
             
             loss.backward()
@@ -185,15 +188,15 @@ def main(configs):
     
             if global_step > 0 and global_step % val_step == 0:
                 model.eval()
-                val_nll, val_con_kl, val_indi_kl = evaluate_step(model, val_loader)
+                val_nll, val_indi_kl, val_con_kl = evaluate_step(model, val_loader)
                 log(val_logger, step=global_step, model=model_name,
-                    losses=[val_nll, val_con_kl, val_indi_kl])
-                message = "Val-NLL: {:.3f}, val-con-kl: {:.3f}, val-indi-kl: {:.3f},"\
-                    .format(val_nll, val_con_kl, val_indi_kl)
+                    losses=[val_nll, val_indi_kl, val_con_kl])
+                message = "Val-NLL: {:.3f}, val-indi-kl: {:.3f}, val-con-kl: {:.3f}"\
+                    .format(val_nll, val_indi_kl, val_con_kl)
                 with open(os.path.join(val_log_path, "log.txt"), "a") as f:
                     f.write(message + "\n")
                 print(message)
-                val_losses.append([val_nll, val_con_kl, val_indi_kl])
+                val_losses.append([val_nll, val_indi_kl, val_con_kl])
                 
                 # reconstruction
                 val_mel, val_lenx, val_indi_mel, val_ctID, val_cID = next(iter(val_single_sampler))
