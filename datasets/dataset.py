@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 
 class MelDataset(Dataset):
-    def __init__(self, dataset_config, subset='train'):
+    def __init__(self, dataset_config, used_key, subset='train'):
         self.dataset_name = dataset_config["dataset"]
         self.preprocessed_path = dataset_config["path"]["preprocessed_path"]
         self.segment_size = dataset_config["preprocessing"]["segment_size"]
@@ -17,9 +17,10 @@ class MelDataset(Dataset):
         assert self.segment_size % self.chunk_size == 0
         
         # data path info & label info
+        used_key = used_key
         data_path = self.preprocessed_path+'/'+'{}_info.json'.format(subset)
         self.data_path_list, self.ctID_list, self.cID_list \
-            = self.process_subset_file(data_path)
+            = self.process_subset_file(data_path, used_key)
         
         # print(self.data_path_list)
         # load total data
@@ -84,16 +85,18 @@ class MelDataset(Dataset):
         plt.imshow(x, aspect='auto', origin='lower')
         plt.show()
     
-    def process_subset_file(self, data_path):     
+    def process_subset_file(self, data_path, used_key):     
         # total data list
         data_path_list = []
         ctID_list = []
         cID_list = []
         with open(data_path, 'r') as f:
             data_info = json.load(f)
+            
         # used key in data_info
-        used_key = ['twin_1', 'twin_2']
-        used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4']
+        used_key = used_key
+        
+        # used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4']
         for key in used_key:
             if key in data_info:
                 for i in data_info[key]:

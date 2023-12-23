@@ -74,9 +74,9 @@ def main(configs):
     
     # data loading
     print('start loading data')
-    trn_set = MelDataset(dataset_config, subset='train')
-    val_set = MelDataset(dataset_config, subset='val')
-    tst_set = MelDataset(dataset_config, subset='test')
+    trn_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2'], subset='train')
+    val_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2'], subset='val')
+    tst_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2'], subset='test')
     
     print('len', len(trn_set))
     
