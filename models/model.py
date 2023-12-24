@@ -25,6 +25,7 @@ class VAEbase(nn.Module):
         time_len = z_con.size(2)
         z_indi_in = z_indi.unsqueeze(2).expand(-1, -1, time_len)
         
+        
         dec_in = torch.cat([z_indi_in, z_con], dim=1)
         x_rec = self.decoder(dec_in, lenx)
         

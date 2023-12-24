@@ -11,6 +11,9 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from matplotlib import pyplot as plt
 
+# path
+os.chdir('/mnt/work/')
+
 # evaluate val dataset
 def evaluate_step(model, dataloader):
     nll = 0.
@@ -66,7 +69,7 @@ def get_param_num(model):
     num_param = sum(param.numel() for param in model.parameters())
     return num_param
 
-def main(configs):
+def main(configs, experi_name):
     # device 1 
     torch.cuda.set_device(1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -74,9 +77,9 @@ def main(configs):
     
     # data loading
     print('start loading data')
-    trn_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2'], subset='train')
-    val_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2'], subset='val')
-    tst_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2'], subset='test')
+    trn_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4'], subset='train')
+    val_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4'], subset='val')
+    tst_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4'], subset='test')
     
     print('len', len(trn_set))
     
@@ -124,8 +127,9 @@ def main(configs):
     stop_step = train_config["step"]["mi_stop"]
     
     # Experiment name
-    exp_name = '{}-c_{}_{}-i_{}_{}'.format(
-        model_name, con_gamma, con_mi, indi_gamma, indi_mi)
+
+    exp_name = '{}-{}-c_{}_{}-i_{}_{}'.format(
+        model_name,experi_name, con_gamma, con_mi, indi_gamma, indi_mi)
     current_directory = os.path.dirname(os.path.abspath(__file__))
     exp_name =  current_directory + '/' + "output" + '/' + exp_name
 
@@ -136,7 +140,7 @@ def main(configs):
         ckpt = torch.load(save_path)
         model.load_state_dict(ckpt["model"])
     
-     # Init logger
+    # Init logger
     for p in train_config["path"].values():
         os.makedirs(os.path.join(exp_name, p), exist_ok=True)
     train_log_path = os.path.join(exp_name, train_config["path"]["log_path"], "train")
@@ -146,6 +150,7 @@ def main(configs):
     train_logger = SummaryWriter(train_log_path)
     val_logger = SummaryWriter(val_log_path)
     val_losses = []
+    
     if train_config["load_model"] and train_config["load_step"] > 0:
         global_step = train_config["load_step"] + 1
     else:
@@ -161,7 +166,7 @@ def main(configs):
             # gradient zero
             model.zero_grad(set_to_none=True)
             
-            outputs = model(mel, lenx, indi_mel) # 
+            outputs = model(mel, lenx, indi_mel) 
             nll, indi_kl, con_kl = model.loss_fn(outputs, mel, lenx)
             
             indi_c = np.clip(indi_mi / stop_step * global_step, 0, indi_mi)
@@ -236,7 +241,6 @@ def main(configs):
             
 
 if __name__ == "__main__":
-    # args
     
     # config path on win
     # data_config_path = "./configs/monkey/dataset.yaml"
@@ -245,15 +249,18 @@ if __name__ == "__main__":
     
     # config path
     data_config_path = "./Animal/configs/monkey/dataset.yaml"
-    model_config_path = "./Animal/configs/monkey/model.yaml"
+    model_config_path = "./Animal/configs/monkey/model1.yaml"
     train_config_path = "./Animal/configs/monkey/train.yaml"
-    
-    # Read Config
+     
+    # read Config
     dataset_config = yaml.load(open(data_config_path, "r"), Loader=yaml.FullLoader)
     model_config = yaml.load(open(model_config_path, "r"), Loader=yaml.FullLoader)
     train_config = yaml.load(open(train_config_path, "r"), Loader=yaml.FullLoader)
     configs = (dataset_config, model_config, train_config)
-    main(configs)
+    
+    # run
+    experi_name = 't1t2t5'
+    main(configs, experi_name)
     
 
     
