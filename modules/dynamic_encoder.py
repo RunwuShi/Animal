@@ -64,7 +64,7 @@ class dynamicEncoderBase(nn.Module):
             mask = torch.zeros([B, T], dtype=torch.bool, device=x.device)
             
         # convolution
-        h = self.conv_initial(x)
+        h = self.conv_initial(x) # [B, C, T]: C: eg 80->256
         for conv in self.conv_layers:
             h = conv(h, lens)
         h = self.activation(h)
@@ -85,7 +85,6 @@ class dynamicEncoderBase(nn.Module):
             )
         else:
             max_len = min(max_len, self.max_seq_len)
-
             # -- Prepare masks
             slf_attn_mask = mask.unsqueeze(1).expand(-1, max_len, -1)
             dec_output = sa_input[:, :max_len, :] + self.position_enc[:, :max_len, :].expand(batch_size, -1, -1)
@@ -95,7 +94,7 @@ class dynamicEncoderBase(nn.Module):
         for dec_layer in self.layer_stack:
             dec_output, dec_slf_attn = dec_layer(
                 dec_output, mask=mask, slf_attn_mask=slf_attn_mask)
-        dec_output = dec_output.permute(0, 2, 1).contiguous()
+        dec_output = dec_output.permute(0, 2, 1).contiguous() # [1,200,256]->[1,256,200]
 
         # get distribution parameters
         mu_logs = self.mu_logs_linear(dec_output)
@@ -135,6 +134,10 @@ class dynamicEncoderBase(nn.Module):
             torch.zeros_like(mu, requires_grad=False),
             torch.ones_like(log_std, requires_grad=False))
         kl = D.kl.kl_divergence(post, prior)
-        kl = torch.sum(torch.sum(kl, dim=1) * mask, dim=1) / torch.sum(mask, dim=1)
+        
+        # ori_kl = torch.sum(torch.sum(kl, dim=1), dim=1) / torch.sum(mask, dim=1)
+        # kl = torch.mean(ori_kl)
+        
+        kl = torch.sum(torch.sum(kl, dim=1) * mask, dim=1) / torch.sum(mask, dim=1) # error
         kl = torch.mean(kl)
         return kl

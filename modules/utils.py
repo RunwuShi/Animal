@@ -426,3 +426,54 @@ class MaskedBatchNorm1d(nn.BatchNorm1d):
             inp = inp * self.weight[None, :, None] + self.bias[None, :, None]
 
         return inp
+
+
+# A block consisting of convolution, batch normalization (optional) followed by a nonlinearity (defaults to Leaky ReLU)
+class ConvUnit1D(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel, stride=1, padding=0, batchnorm=False, nonlinearity=nn.LeakyReLU(0.2)):
+        super().__init__()
+        if batchnorm is True:
+            self.model = nn.Sequential(
+                    nn.Conv1d(in_channels, out_channels, kernel, stride, padding),
+                    nn.BatchNorm1d(out_channels), nonlinearity)
+        else:
+            self.model = nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel, stride, padding), 
+                                       nonlinearity)
+            
+
+    def forward(self, x):
+        return self.model(x)
+    
+    
+# A block consisting of a transposed convolution, batch normalization (optional) followed by a nonlinearity (defaults to Leaky ReLU)
+class ConvUnitTranspose1D(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel, stride=1, padding=0, out_padding=0, batchnorm=False, nonlinearity=nn.LeakyReLU(0.2)):
+        super().__init__()
+        if batchnorm is True:
+            self.model = nn.Sequential(
+                    nn.ConvTranspose1d(in_channels, out_channels, kernel, stride, padding, out_padding),
+                    nn.BatchNorm1d(out_channels), nonlinearity)
+        else:
+            self.model = nn.Sequential(nn.ConvTranspose1d(in_channels, out_channels, kernel, stride, padding, out_padding), 
+                                       nonlinearity)
+
+    def forward(self, x):
+        return self.model(x)
+    
+    
+# A block consisting of an affine layer, batch normalization (optional) followed by a nonlinearity (defaults to Leaky ReLU)
+class LinearUnit(nn.Module):
+    def __init__(self, in_features, out_features, batchnorm=False, nonlinearity=nn.LeakyReLU(0.2)):
+        super(LinearUnit, self).__init__()
+        if batchnorm is True:
+            self.model = nn.Sequential(
+                    nn.Linear(in_features, out_features),
+                    nn.BatchNorm1d(out_features), nonlinearity)
+        else:
+            self.model = nn.Sequential(
+                    nn.Linear(in_features, out_features), 
+                    # nn.LayerNorm(out_features),
+                    nonlinearity)
+
+    def forward(self, x):
+        return self.model(x)

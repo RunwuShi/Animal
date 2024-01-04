@@ -13,11 +13,11 @@ class ScaledDotProductAttention(nn.Module):
 
     def forward(self, q, k, v, mask=None):
 
-        attn = torch.bmm(q, k.transpose(1, 2))
+        attn = torch.bmm(q, k.transpose(1, 2)) # [2, 200, 200] 200: T (input: [1,80,200])
         attn = attn / self.temperature
 
         if mask is not None:
-            attn = attn.masked_fill(mask, -np.inf)
+            attn = attn.masked_fill(mask, -np.inf) # fill -np.inf to the True position
 
         attn = self.softmax(attn)
         output = torch.bmm(attn, v)

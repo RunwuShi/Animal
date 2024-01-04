@@ -43,6 +43,7 @@ class staticEncoderBase(nn.Module):
             h = conv(h)
         h = self.activation(h)
         h = self.out_layer_norm(h.permute(0, 2, 1)).permute(0, 2, 1)
+        
         h = torch.mean(h, dim=[2])  # [batch, h_channels]
         
         mu_logs = self.mu_logs_linear(h)

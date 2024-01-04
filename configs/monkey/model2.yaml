@@ -1,13 +1,14 @@
 model_name: 'VAEbase'
+# static_encoder 4层
 
 prior:
   indi_dim: 128
   con_dim: 128
 
 static_encoder:
-  in_channels: 80 # n_mel_channels
+  in_channels: 80 # = n_mel_channels
   h_channels: 256
-  out_channels: 128 # individual embedding
+  out_channels: 128 # = individual embedding
   conv_kernels: [3, 3, 5] # [3, 3, 5, 5]
   paddings: [1, 1, 2] # [1, 1, 2, 2]
   pooling_kernels: [2, 2, 2] # [2, 2, 2, 2]
@@ -15,9 +16,9 @@ static_encoder:
   activation: 'relu'
 
 dynamic_encoder:
-  in_channels: 80 # n_mel_channels
+  in_channels: 80 # =n_mel_channels
   h_channels: 256
-  out_channels: 128 # content embedding
+  out_channels: 128 # con_dim
   conv_kernels: [3, 3]
   paddings: [1, 1]
   activation: 'relu'

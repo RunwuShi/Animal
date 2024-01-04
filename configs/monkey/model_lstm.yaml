@@ -1,0 +1,14 @@
+model_name: 'DisentangledVAE1D'
+
+DisentangledVAE1D:
+  f_dim: 256
+  z_dim: 32
+  conv_dim: 1024 # 2048
+  step: 256
+  in_size: 64
+  hidden_dim: 512
+  mel_dim: 80
+  nonlinearity: None
+  factorised: True
+
+

@@ -70,7 +70,7 @@ def get_param_num(model):
     num_param = sum(param.numel() for param in model.parameters())
     return num_param
 
-def main(configs, experi_name):
+def main(configs, file_config, experi_name):
     # device 1 
     torch.cuda.set_device(1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -78,9 +78,30 @@ def main(configs, experi_name):
     
     # data loading
     print('start loading data')
-    trn_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4'], subset='train')
-    val_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4'], subset='val')
-    tst_set = MelDataset(dataset_config, used_key = ['twin_1', 'twin_2', 'twin_3', 'twin_4'], subset='test')
+    trn_set = MelDataset(dataset_config, used_key = [['calltype_2'],['twin_1_0',
+                                                                   'twin_1_1',
+                                                                   'twin_2_2',
+                                                                   'twin_2_3',
+                                                                   'twin_3_4',
+                                                                   'twin_3_5',
+                                                                   'twin_4_6',
+                                                                   'twin_4_7']], subset='train')
+    val_set = MelDataset(dataset_config, used_key = [['calltype_2'],['twin_1_0',
+                                                                   'twin_1_1',
+                                                                   'twin_2_2',
+                                                                   'twin_2_3',
+                                                                   'twin_3_4',
+                                                                   'twin_3_5',
+                                                                   'twin_4_6',
+                                                                   'twin_4_7']],  subset='val')
+    tst_set = MelDataset(dataset_config, used_key = [['calltype_2'],['twin_1_0',
+                                                                   'twin_1_1',
+                                                                   'twin_2_2',
+                                                                   'twin_2_3',
+                                                                   'twin_3_4',
+                                                                   'twin_3_5',
+                                                                   'twin_4_6',
+                                                                   'twin_4_7']],  subset='test')
     
     print('len', len(trn_set))
     
@@ -153,8 +174,12 @@ def main(configs, experi_name):
     
     # save log file config 
     total_config = configs
+    file_config = file_config
     with open(exp_name+'/'+'total_config.json', 'w') as f:
-        json.dump(total_config, f)
+        json.dump(total_config, f, indent = 4)
+    with open(exp_name+'/'+'file_config.json', 'w') as f:
+        json.dump(file_config, f, indent = 4)
+        
     
     if train_config["load_model"] and train_config["load_step"] > 0:
         global_step = train_config["load_step"] + 1
@@ -174,9 +199,8 @@ def main(configs, experi_name):
             outputs = model(mel, lenx, indi_mel) 
             nll, indi_kl, con_kl = model.loss_fn(outputs, mel, lenx)
             
-            indi_c = np.clip(indi_mi / stop_step * global_step, 0, indi_mi)
-            con_c = np.clip(con_mi / stop_step * global_step, 0, con_mi)
-
+            indi_c = np.clip((indi_mi / stop_step) * global_step, 0, indi_mi)
+            con_c = np.clip((con_mi / stop_step) * global_step, 0, con_mi)
             
             # total loss function
             loss = (nll + con_gamma * (con_kl - con_c).abs() +
@@ -246,25 +270,26 @@ def main(configs, experi_name):
 
 if __name__ == "__main__":
     
-    # config path on win
-    # data_config_path = "./configs/monkey/dataset.yaml"
-    # model_config_path = "./configs/monkey/model.yaml"
-    # train_config_path = "./configs/monkey/train.yaml"
+    # only for caller 
+    dataset_pathname = "dataset4.yaml"
+    model_pathname = "model1.yaml"
+    train_pathname = "train7.yaml" 
     
     # config path
-    data_config_path = "./Animal/configs/monkey/dataset2.yaml"
-    model_config_path = "./Animal/configs/monkey/model1.yaml"
-    train_config_path = "./Animal/configs/monkey/train1.yaml"
+    data_config_path  = "./Animal/configs/monkey" + "/" + dataset_pathname
+    model_config_path = "./Animal/configs/monkey" + "/" + model_pathname
+    train_config_path = "./Animal/configs/monkey" + "/" + train_pathname
      
     # read Config
     dataset_config = yaml.load(open(data_config_path, "r"), Loader=yaml.FullLoader)
     model_config = yaml.load(open(model_config_path, "r"), Loader=yaml.FullLoader)
     train_config = yaml.load(open(train_config_path, "r"), Loader=yaml.FullLoader)
     configs = (dataset_config, model_config, train_config)
+    file_config = (dataset_pathname, model_pathname, train_pathname)
     
     # run
-    experi_name = '512-8chunk'
-    main(configs, experi_name)
+    experi_name = 'onlyclass_ct2'
+    main(configs, file_config, experi_name)
     
 
     
