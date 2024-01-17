@@ -1,3 +1,2 @@
-from .dataset import MelDataset, MelDataset_lstm
+from .dataset import MelDataset, MelDataset_lstm, vctkDataset, greatbirdDataset
 from .preprocessor import Preprocessor
-from .monkey import monkey

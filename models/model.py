@@ -18,7 +18,7 @@ class VAEbase(nn.Module):
         
     def forward(self, x, lenx, indi_ref):
         indi_mu, indi_log_std = self.staticEncoder(indi_ref) # [B, individual embedding]
-        con_mu, con_log_std = self.dynamicEncoder(x, lenx) # [B, individual embedding, T]
+        con_mu, con_log_std = self.dynamicEncoder(x, lenx) # [B, content embedding, T]
         
         z_indi = self.staticEncoder.sample(indi_mu, indi_log_std)
         z_con = self.dynamicEncoder.sample(con_mu, con_log_std)
@@ -201,7 +201,6 @@ class DisentangledVAE1D(nn.Module):
         return x
     
     
-
     # 1D
     def decode_frames(self, zf):
         frames = zf.size(1)
@@ -280,7 +279,7 @@ class DisentangledVAE1D(nn.Module):
                 'z_prior_logvar': z_logvar_prior}
 
 
-    def loss_fn(self, original_seq, recon_seq, f_mean, f_logvar, z_post_mean, z_post_logvar, z_prior_mean, z_prior_logvar):
+    def loss_fn(self, original_seq, recon_seq, f_mean, f_logvar, z_post_mean, z_post_logvar, z_prior_mean, z_prior_logvar,hyperparameters=None):
         """
         Loss function consists of 3 parts, the reconstruction term that is the MSE loss between the generated and the original images
         the KL divergence of f, and the sum over the KL divergence of each z_t, with the sum divided by batch_size
@@ -290,6 +289,7 @@ class DisentangledVAE1D(nn.Module):
         are given by the LSTM
         """
         batch_size = original_seq.size(0)
+        
         mse = F.mse_loss(recon_seq,original_seq,reduction='sum')
         
         kld_f = -0.5 * torch.sum(1 + f_logvar - torch.pow(f_mean,2) - torch.exp(f_logvar))
@@ -297,7 +297,15 @@ class DisentangledVAE1D(nn.Module):
         z_prior_var = torch.exp(z_prior_logvar)
         kld_z = 0.5 * torch.sum(z_prior_logvar - z_post_logvar + ((z_post_var + torch.pow(z_post_mean - z_prior_mean, 2)) / z_prior_var) - 1)
         
-        return (mse + kld_f + kld_z)/batch_size, kld_f/batch_size, kld_z/batch_size
+        if hyperparameters is not None:
+            con_gamma = hyperparameters['con_gamma']
+            indi_gamma = hyperparameters['indi_gamma']
+            
+            loss = (mse + indi_gamma * kld_f.abs() + con_gamma * kld_z.abs())/batch_size
+        else:
+            loss = (mse + kld_f + kld_z)/batch_size
+        
+        return loss, kld_f/batch_size, kld_z/batch_size
 
 
 # test

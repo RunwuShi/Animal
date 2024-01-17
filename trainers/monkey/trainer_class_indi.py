@@ -1,16 +1,19 @@
-# Shirunwu Friday, December 15, 2023 @ 14:01:45 PM
 import os
-import yaml
+import sys
 import json
+from argparse import ArgumentParser
+import yaml
 import torch
-import argparse
-import models
 import numpy as np
 from tqdm import tqdm
-from datasets import MelDataset
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from matplotlib import pyplot as plt
+# personal files
+os.chdir('/mnt/work/')
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+import models
+from datasets import MelDataset, vctkDataset
 
 # path
 os.chdir('/mnt/work/')
@@ -21,7 +24,7 @@ def evaluate_step(model, dataloader):
     con_kl = 0.
     indi_kl = 0.
     sample_size = 0
-    for mel, lenx, indi_mel, ctID, cID in dataloader:
+    for mel, lenx, indi_mel, cID, ctID in dataloader:
         mel = mel.to(model.device)
         indi_mel = indi_mel.to(model.device)
         lenx = lenx.to(model.device)
@@ -78,52 +81,35 @@ def main(configs, file_config, experi_name):
     
     # data loading
     print('start loading data')
-    trn_set = MelDataset(dataset_config, used_key = [[
-                                                      'calltype_1'
-                                                      ,'calltype_2'
-                                                      ,'calltype_3'
-                                                    #   ,'calltype_4'
-                                                    #   ,'calltype_5'
-                                                      ],
-                                                                  [
-                                                                   'twin_1_0'
-                                                                   ,'twin_1_1'
-                                                                   ,'twin_2_2'
-                                                                   ,'twin_2_3'
-                                                                #    ,'twin_3_4'
-                                                                #    ,'twin_3_5'
-                                                                   ]], subset='train')
-    val_set = MelDataset(dataset_config, used_key = [[
-                                                      'calltype_1'
-                                                      ,'calltype_2'
-                                                      ,'calltype_3'
-                                                    #   ,'calltype_4'
-                                                    #   ,'calltype_5'
-                                                      ],
-                                                                  [
-                                                                   'twin_1_0'
-                                                                   ,'twin_1_1'
-                                                                   ,'twin_2_2'
-                                                                   ,'twin_2_3'
-                                                                #    ,'twin_3_4'
-                                                                #    ,'twin_3_5'
-                                                                   ]], subset='val')
-    tst_set = MelDataset(dataset_config, used_key = [[
-                                                      'calltype_1'
-                                                      ,'calltype_2'
-                                                      ,'calltype_3'
-                                                    #   ,'calltype_4'
-                                                    #   ,'calltype_5'
-                                                      ],
-                                                                  [
-                                                                   'twin_1_0'
-                                                                   ,'twin_1_1'
-                                                                   ,'twin_2_2'
-                                                                   ,'twin_2_3'
-                                                                #    ,'twin_3_4'
-                                                                #    ,'twin_3_5'
-                                                                   ]], subset='test')
-    
+        # data loading
+    print('start loading data')
+    used_key = [[
+                  'calltype_1',
+                  'calltype_2',
+                  'calltype_3',
+                  'calltype_4',
+                  'calltype_5',
+                  'calltype_6',
+                #   'calltype_7',
+                #   'calltype_8',
+                #   'calltype_9',
+                #   'calltype_10'
+                    ],
+                        [
+                        'twin_1_0',
+                        'twin_1_1',
+                        'twin_2_2',
+                        'twin_2_3',
+                        'twin_3_4',
+                        'twin_3_5',
+                        'twin_4_6',
+                        'twin_4_7',
+                        # 'twin_5_8',
+                        # 'twin_5_9'
+                        ]]
+    trn_set = MelDataset(dataset_config, used_key = used_key, subset='train')
+    val_set = MelDataset(dataset_config, used_key = used_key, subset='val')
+        
     print('len', len(trn_set))
     
     batch_size = train_config["optimizer"]["batch_size"]
@@ -138,7 +124,6 @@ def main(configs, file_config, experi_name):
         collate_fn=val_set.collate_fn, pin_memory=True)
     
     val_single_sampler = DataLoader(val_set, batch_size=1, shuffle=True)
-    tst_single_sampler = DataLoader(tst_set, batch_size=1, shuffle=True)
 
     print('over loading data', '\n',
           'training size:', len(trn_set))
@@ -171,10 +156,10 @@ def main(configs, file_config, experi_name):
     
     # Experiment name
     exp_name = '{}-{}-c_{}_{}-i_{}_{}'.format(
-        model_name,experi_name, con_gamma, con_mi, indi_gamma, indi_mi)
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    exp_name =  current_directory + '/' + "output" + '/' + exp_name
-
+        model_name, experi_name.split('/')[-1], con_gamma, con_mi, indi_gamma, indi_mi)
+    # current_directory = os.path.dirname(os.path.abspath(__file__))
+    exp_name =   "./Animal/output" + '/'+ experi_name.split('/')[0] + '/' + exp_name
+    
     # Load model checkpoint
     if train_config["load_model"]:
         save_path = os.path.join(exp_name, train_config["path"]["save_path"], 
@@ -209,7 +194,7 @@ def main(configs, file_config, experi_name):
         
     # start training---------------------------------------------------------------
     while True:
-        for mel, lenx, indi_mel, ctID, cID in tqdm(trn_loader):
+        for mel, lenx, indi_mel, cID, ctID in tqdm(trn_loader):
             mel = mel.to(device)
             lenx = lenx.to(device)
             indi_mel = indi_mel.to(device)
@@ -254,7 +239,7 @@ def main(configs, file_config, experi_name):
                 val_losses.append([val_nll, val_indi_kl, val_con_kl])
                 
                 # reconstruction
-                val_mel, val_lenx, val_indi_mel, val_ctID, val_cID = next(iter(val_single_sampler))
+                val_mel, val_lenx, val_indi_mel, val_cID, val_ctID = next(iter(val_single_sampler))
                 val_mel = val_mel.to(device)
                 val_lenx = val_lenx.to(device)
                 val_indi_mel = val_indi_mel.to(device)
@@ -272,9 +257,9 @@ def main(configs, file_config, experi_name):
                     gr_mel_fig = plot_mel(val_mel)
 
                     log(val_logger, step=global_step, fig=gr_mel_fig,
-                        tag="Val/step-{}-{}_mel_gt".format(global_step, val_ctID.detach().cpu().numpy()))
+                        tag="Val/step-{}-{}-{}_mel_gt".format(global_step, val_cID.detach().cpu().numpy(), val_ctID.detach().cpu().numpy()))
                     log(val_logger, step=global_step, fig=rec_mel_fig,
-                        tag="Val/step-{}-{}_mel".format(global_step, val_ctID.detach().cpu().numpy()))
+                        tag="Val/step-{}-{}-{}_mel".format(global_step, val_cID.detach().cpu().numpy(), val_ctID.detach().cpu().numpy()))
                      
                 model.train()
                 
@@ -293,9 +278,9 @@ def main(configs, file_config, experi_name):
 if __name__ == "__main__":
     
     # only for caller 
-    dataset_pathname = "dataset4.yaml"
-    model_pathname = "model3.yaml"
-    train_pathname = "train8.yaml" 
+    dataset_pathname = "dataset7.yaml"
+    model_pathname = "model2.yaml"
+    train_pathname = "train16.yaml" 
     
     # config path
     data_config_path  = "./Animal/configs/monkey" + "/" + dataset_pathname
@@ -310,7 +295,7 @@ if __name__ == "__main__":
     file_config = (dataset_pathname, model_pathname, train_pathname)
     
     # run
-    experi_name = 'class_indi1'
+    experi_name = 'monkey/class_indi_4'
     main(configs, file_config, experi_name)
     
 

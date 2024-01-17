@@ -6,6 +6,6 @@ path:
   dataset_summary: "./dataset/preprocessed/"
 
 preprocessing:
-  segment_size: 256 # each sample length
-  chunk_size: 16 # 16 first only class
+  segment_size: 128 # each sample length
+  chunk_size: 16 # 
 

@@ -1,0 +1,34 @@
+dataset: monkey
+
+path:
+  origin_path: "./dataset/monkey"  # set to the root directory of dataset
+  preprocessed_path: "./dataset/preprocessed/monkey/set_by_class"  # set to the directory 
+  dataset_summary: "./dataset/preprocessed/"
+
+preprocessing:
+  segment_size: 256 # each sample length
+  chunk_size: 16 # 16 first only class
+
+used_key:
+  - 
+    # - 'calltype_1'
+    - 'calltype_2'
+    - 'calltype_3'
+    - 'calltype_4'
+    - 'calltype_5'
+    # - 'calltype_6'
+    # - 'calltype_7'
+    - 'calltype_8'
+    - 'calltype_9'
+    - 'calltype_10'
+  - 
+    # - 'twin_1_0'
+    - 'twin_1_1'
+    - 'twin_2_2'
+    - 'twin_2_3'
+    - 'twin_3_4'
+    - 'twin_3_5'
+    - 'twin_4_6'
+    - 'twin_4_7'
+    - 'twin_5_8'
+    - 'twin_5_9'

@@ -19,18 +19,20 @@ optimizer:
   warm_up_step: 4000
   anneal_steps: []
   anneal_rate: 1.0
-  con_gamma: 50. # 100.
-  con_mi: 1.0 # 1.3
-  indi_gamma: 1.5 # 10.
-  indi_mi: 20. # 60.
+  con_gamma: 135. # 100.
+  con_mi: 1.1 # 1.3
+  indi_gamma: 1.2 # 10.
+  indi_mi: 70. # 60.
 
 step:
-  total_step: 100000 # 100000
+  total_step: 150000 # 100000
   mi_stop: 20000 #20000
   log_step: 500
   val_step: 2000
-  save_step: 2000
+  save_step: 5000
 
 
 misc:
   seed: 114514
+
+# 使用easy数据集

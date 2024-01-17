@@ -88,78 +88,34 @@ def main(configs, file_config, experi_name):
     
     # data loading
     print('start loading data')
-    trn_set = MelDataset(dataset_config, used_key = [[
-                                                    #   'calltype_1',
-                                                      'calltype_2',
-                                                      'calltype_3',
-                                                      'calltype_4',
-                                                      'calltype_5',
-                                                    #   'calltype_6',
-                                                    #   'calltype_7',
-                                                    #   'calltype_8',
-                                                    #   'calltype_9',
-                                                    #   'calltype_10'
-                                                      ],
-                                                                  [
-                                                                   'twin_1_0',
-                                                                   'twin_1_1',
-                                                                   'twin_2_2',
-                                                                   'twin_2_3',
-                                                                #    'twin_3_4',
-                                                                #    'twin_3_5',
-                                                                #    'twin_4_6',
-                                                                #    'twin_4_7',
-                                                                #    'twin_5_8',
-                                                                #    'twin_5_9'
-                                                                   ]], subset='train')
-    val_set = MelDataset(dataset_config, used_key = [[
-                                                    #   'calltype_1',
-                                                      'calltype_2',
-                                                      'calltype_3',
-                                                      'calltype_4',
-                                                      'calltype_5',
-                                                    #   'calltype_6',
-                                                    #   'calltype_7',
-                                                    #   'calltype_8',
-                                                    #   'calltype_9',
-                                                    #   'calltype_10'
-                                                      ],
-                                                                  [
-                                                                   'twin_1_0',
-                                                                   'twin_1_1',
-                                                                   'twin_2_2',
-                                                                   'twin_2_3',
-                                                                #    'twin_3_4',
-                                                                #    'twin_3_5',
-                                                                #    'twin_4_6',
-                                                                #    'twin_4_7',
-                                                                #    'twin_5_8',
-                                                                #    'twin_5_9'
-                                                                   ]], subset='val')
-    tst_set = MelDataset(dataset_config, used_key = [[
-                                                    #   'calltype_1',
-                                                      'calltype_2',
-                                                      'calltype_3',
-                                                      'calltype_4',
-                                                      'calltype_5',
-                                                    #   'calltype_6',
-                                                    #   'calltype_7',
-                                                    #   'calltype_8',
-                                                    #   'calltype_9',
-                                                    #   'calltype_10'
-                                                      ],
-                                                                  [
-                                                                   'twin_1_0',
-                                                                   'twin_1_1',
-                                                                   'twin_2_2',
-                                                                   'twin_2_3',
-                                                                #    'twin_3_4',
-                                                                #    'twin_3_5',
-                                                                #    'twin_4_6',
-                                                                #    'twin_4_7',
-                                                                #    'twin_5_8',
-                                                                #    'twin_5_9'
-                                                                   ]], subset='test')
+    used_key = dataset_config["used_key"]
+    # used_key = [[
+    #             #   'calltype_1',
+    #                 'calltype_2',
+    #                 'calltype_3',
+    #                 'calltype_4',
+    #                 'calltype_5',
+    #               'calltype_6',
+    #               'calltype_7',
+    #               'calltype_8',
+    #               'calltype_9',
+    #               'calltype_10'
+    #                 ],
+    #                     [
+    #                     'twin_1_0',
+    #                     'twin_1_1',
+    #                     'twin_2_2',
+    #                     'twin_2_3',
+    #                     'twin_3_4',
+    #                     'twin_3_5',
+    #                     'twin_4_6',
+    #                     'twin_4_7',
+    #                     'twin_5_8',
+    #                     'twin_5_9'
+    #                     ]]
+    trn_set = MelDataset(dataset_config, used_key = used_key, subset='train')
+    val_set = MelDataset(dataset_config, used_key = used_key, subset='val')
+    tst_set = MelDataset(dataset_config, used_key = used_key, subset='test')
     
     print('len', len(trn_set))
     
@@ -167,11 +123,11 @@ def main(configs, file_config, experi_name):
     
     # Dataloader
     trn_loader = DataLoader(
-        trn_set, batch_size=batch_size, num_workers=4, shuffle=True,
+        trn_set, batch_size=batch_size, num_workers=6, shuffle=True,
         collate_fn=trn_set.collate_fn, pin_memory=True)
     
     val_loader = DataLoader(
-        val_set, batch_size=batch_size, num_workers=4, shuffle=True,
+        val_set, batch_size=batch_size, num_workers=6, shuffle=True,
         collate_fn=val_set.collate_fn, pin_memory=True)
     
     val_single_sampler = DataLoader(val_set, batch_size=1, shuffle=True)
@@ -203,8 +159,8 @@ def main(configs, file_config, experi_name):
     save_step = train_config["step"]["save_step"]
     val_step = train_config["step"]["val_step"]
     con_gamma = train_config["optimizer"]["con_gamma"]
-    indi_gamma = train_config["optimizer"]["indi_gamma"]
     con_mi = train_config["optimizer"]["con_mi"]
+    indi_gamma = train_config["optimizer"]["indi_gamma"]
     indi_mi = train_config["optimizer"]["indi_mi"]
     stop_step = train_config["step"]["mi_stop"]
     total_epoch = train_config["step"]["total_epoch"]
@@ -270,7 +226,9 @@ def main(configs, file_config, experi_name):
                                             z_post_mean=outputs['z_post_mean'], 
                                             z_post_logvar=outputs['z_post_logvar'], 
                                             z_prior_mean=outputs['z_prior_mean'], 
-                                            z_prior_logvar=outputs['z_prior_logvar'])
+                                            z_prior_logvar=outputs['z_prior_logvar'],
+                                            hyperparameters={'con_gamma':con_gamma,
+                                                             'indi_gamma':indi_gamma})
             
             loss.backward()
             optim.step()
@@ -340,12 +298,12 @@ def main(configs, file_config, experi_name):
 
 if __name__ == "__main__":
     # f input is suffled
-    
+    # use hyperparameter indi and content gamma
     
     # only for caller 
-    dataset_pathname = "dataset4.yaml"
+    dataset_pathname = "dataset4_lstm.yaml"
     model_pathname = "model_lstm3.yaml"
-    train_pathname = "train_lstm.yaml" 
+    train_pathname = "train_lstm2.yaml" 
     
     # config path
     data_config_path  = "./Animal/configs/monkey" + "/" + dataset_pathname
@@ -360,7 +318,7 @@ if __name__ == "__main__":
     file_config = (dataset_pathname, model_pathname, train_pathname)
     
     # run
-    experi_name = 'LSTM3'
+    experi_name = 'LSTM5'
     main(configs, file_config, experi_name)
     
 
