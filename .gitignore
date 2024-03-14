@@ -1,6 +1,9 @@
 output/
 analysis/
 **/nohup.out
+<<<<<<< HEAD
 trainers/greatbird/nohup.out
 trainers/finch_bird2/nohup.out
+=======
+>>>>>>> fb12da76aba7abc34cea85b663c36c1ad83ab76d
 *.nfs*
