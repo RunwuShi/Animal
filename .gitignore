@@ -1,4 +1,6 @@
 output/
 analysis/
-/nohup.out
+**/nohup.out
+trainers/greatbird/nohup.out
+trainers/finch_bird2/nohup.out
 *.nfs*
