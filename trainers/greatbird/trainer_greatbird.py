@@ -30,6 +30,7 @@ def evaluate_step(model, dataloader):
         outputs = model(mel, lenx, indi_mel)
         _nll, _indi_kl, _con_kl = model.loss_fn(outputs, mel, lenx)
         
+        
         batch_size = mel.shape[0]
         sample_size += batch_size
         
@@ -60,6 +61,7 @@ def log(logger, step=None, losses=None, fig=None, audio=None, sampling_rate=2210
         logger.add_scalar("Loss/NLL", losses[0], step)
         logger.add_scalar("Loss/CON-KL", losses[1], step)
         logger.add_scalar("Loss/INDI-KL", losses[2], step)
+        logger.add_scalar("Loss/Total", losses[3], step)
 
     if fig is not None:
         logger.add_figure(tag, fig)
@@ -72,8 +74,10 @@ def get_param_num(model):
     return num_param
 
 def main(configs, file_config, experi_name):
+    # device 0
+    torch.cuda.set_device(0)
     # device 1 
-    torch.cuda.set_device(1)
+    # torch.cuda.set_device(1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset_config, model_config, train_config = configs
     
@@ -93,7 +97,7 @@ def main(configs, file_config, experi_name):
         collate_fn=trn_set.collate_fn, pin_memory=True)
     
     val_loader = DataLoader(
-        val_set, batch_size=batch_size, num_workers=4, shuffle=True,
+        val_set, batch_size=batch_size, num_workers=6, shuffle=True,
         collate_fn=val_set.collate_fn, pin_memory=True)
     
     val_single_sampler = DataLoader(val_set, batch_size=1, shuffle=True)
@@ -192,25 +196,31 @@ def main(configs, file_config, experi_name):
             # print('run')
             # evaluate
             if global_step > 0 and global_step % log_step == 0:
-                losses = [nll.item(), con_kl.item(), indi_kl.item()]
+                losses = [nll.item(), con_kl.item(), indi_kl.item(), loss.item()]
                 message1 = "Step {}/{}, ".format(global_step, total_step)
-                message2 = "NLL: {:.3f}, con-kl: {:.3f}, indi-kl: {:.3f},".format(*losses)
+                message2 = "  NLL: {:.3f}, con-kl: {:.3f}, indi-kl: {:.3f}, loss: {:.3f}".format(*losses)
+                message3 = "  gamma_con: {:.3f}, gamma_indi: {:.3f}"\
+                    .format((con_gamma * (con_kl - con_c).abs()).item(), (indi_gamma * (indi_kl - indi_c).abs()).item())
                 with open(os.path.join(train_log_path, "log.txt"), "a") as f:
-                    f.write(message1 + message2 + "\n")
-                print(message1 + message2)
+                    f.write(message1 + message2 + message3 + "\n")
+                print("\n", message1 + message2 + message3)
                 log(train_logger, global_step, losses=losses, model=model_name)
     
             if global_step > 0 and global_step % val_step == 0:
                 model.eval()
                 val_nll, val_indi_kl, val_con_kl = evaluate_step(model, val_loader)
+                val_loss = (val_nll + con_gamma * np.abs((val_con_kl - con_c)) + \
+                    indi_gamma * np.abs((val_indi_kl - indi_c)))
                 log(val_logger, step=global_step, model=model_name,
-                    losses=[val_nll, val_con_kl, val_indi_kl])
-                message = "Val-NLL: {:.3f}, val-con-kl: {:.3f}, val-indi-kl: {:.3f}"\
-                    .format(val_nll, val_con_kl, val_indi_kl)
+                    losses=[val_nll, val_con_kl, val_indi_kl, val_loss])
+                message = "Val-NLL: {:.3f}, val-con-kl: {:.3f}, val-indi-kl: {:.3f}, val_loss: {:.3f}"\
+                    .format(val_nll, val_con_kl, val_indi_kl, val_loss)
+                message2 = "  gamma_con: {:.3f}, gamma_indi: {:.3f}"\
+                    .format(con_gamma * np.abs((val_con_kl - con_c)), indi_gamma * np.abs((val_indi_kl - indi_c)))
                 with open(os.path.join(val_log_path, "log.txt"), "a") as f:
                     f.write(message + "\n")
-                print(message)
-                val_losses.append([val_nll, val_indi_kl, val_con_kl])
+                print("\n", message + message2)
+                val_losses.append([val_nll, val_indi_kl, val_con_kl, val_loss])
                 
                 # reconstruction
                 val_mel, val_lenx, val_indi_mel, val_cID, val_cID_type= next(iter(val_single_sampler))
@@ -252,15 +262,15 @@ def main(configs, file_config, experi_name):
 if __name__ == "__main__":
 
     # config file name
-    dataset_pathname = "dataset_greatbird.yaml"
+    dataset_pathname = "dataset_greatbird_chunk.yaml"
     model_pathname = "model_greatbird.yaml"
-    train_pathname = "train_greatbird6.yaml" 
+    train_pathname = "train_greatbird_full_8.yaml" 
     
     # config path
     data_config_path  = "./Animal/configs/greatbird/" + "/" + dataset_pathname
     model_config_path = "./Animal/configs/greatbird/" + "/" + model_pathname
     train_config_path = "./Animal/configs/greatbird/" + "/" + train_pathname
-     
+    
     # read Config
     dataset_config = yaml.load(open(data_config_path, "r"), Loader=yaml.FullLoader)
     model_config = yaml.load(open(model_config_path, "r"), Loader=yaml.FullLoader)
@@ -269,7 +279,7 @@ if __name__ == "__main__":
     file_config = (dataset_pathname, model_pathname, train_pathname)
     
     # run
-    experi_name = 'greatbird/greatbird_6'
+    experi_name = 'greatbird/greatbird_full_8'
     main(configs, file_config, experi_name)
     
 

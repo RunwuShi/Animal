@@ -1,0 +1,44 @@
+model_name: 'VAEbase_LSTM'
+
+static_encoder:
+  f_dim: 128
+  z_dim: 32
+  conv_dim: 1024 # 2048
+  step: 256
+  in_size: 64
+  hidden_dim: 512
+  mel_dim: 80
+  nonlinearity: None
+  factorised: True
+  shuffle_input: True
+
+
+dynamic_encoder:
+  in_channels: 80 # n_mel_channels
+  h_channels: 256
+  out_channels: 128 # content embedding
+  conv_kernels: [3, 3]
+  paddings: [1, 1]
+  activation: 'relu'
+  sa_layer: 2
+  sa_head: 2
+  sa_hidden: 256
+  sa_filter_size: 1024
+  sa_kernel_size: [9, 1]
+  sa_dropout: 0.2
+  max_seq_len: 2048 # transformer setting
+
+decoder:
+  in_channels: 256 # indi_dim + con_dim
+  h_channels: 256
+  out_channels: 80 # con_dim
+  conv_kernels: [3, 3]
+  paddings: [1, 1]
+  activation: 'relu'
+  sa_layer: 2
+  sa_head: 2
+  sa_hidden: 256
+  sa_filter_size: 1024
+  sa_kernel_size: [9, 1]
+  sa_dropout: 0.2
+  max_seq_len: 2048 # transformer setting
