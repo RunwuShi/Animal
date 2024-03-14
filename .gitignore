@@ -1,4 +1,4 @@
 output/
 analysis/
-/nohup.out
+**/nohup.out
 *.nfs*
