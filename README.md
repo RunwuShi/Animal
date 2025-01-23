@@ -1,2 +1,5 @@
-# For the paper "Bird Vocalization Embedding Extraction Using Self-Supervised Disentangled Representation Learning"
+# For the paper 
+## Bird Vocalization Embedding Extraction Using Self-Supervised Disentangled Representation Learning
 https://arxiv.org/abs/2412.20146
+Abstract: This paper addresses the extraction of the bird vocalization embedding from the whole song level using disentangled representation learning (DRL). Bird vocalization embeddings are necessary for large-scale bioacoustic tasks, and self-supervised methods such as Variational Autoencoder (VAE) have shown their performance in extracting such low-dimensional embeddings from vocalization segments on the note or syllable level. To extend the processing level to the entire song instead of cutting into segments, this paper regards each vocalization as the generalized and discriminative part and uses two encoders to learn these two parts. The proposed method is evaluated on the Great Tits dataset according to the clustering performance, and the results outperform the compared pre-trained models and vanilla VAE. Finally, this paper analyzes the informative part of the embedding, further compresses its dimension, and explains the disentangled performance of bird vocalizations.
+
